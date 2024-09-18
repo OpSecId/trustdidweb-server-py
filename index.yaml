@@ -1,0 +1,24 @@
+apiVersion: v1
+entries:
+  trustdidweb-server-py:
+  - apiVersion: v2
+    appVersion: v0.0.3
+    created: "2024-09-18T15:43:48.79997097Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami/
+      version: 11.9.13
+    - name: common
+      repository: https://charts.bitnami.com/bitnami
+      tags:
+      - bitnami-common
+      version: 2.x.x
+    description: An api server to register and serve trusted web dids.
+    digest: 55621e3a20763d4e21fdf12f63d09a5d221d39aaa705c1af99e6c295104abc26
+    name: trustdidweb-server-py
+    type: application
+    urls:
+    - https://github.com/OpSecId/trustdidweb-server-py/releases/download/trustdidweb-server-py-0.0.3/trustdidweb-server-py-0.0.3.tgz
+    version: 0.0.3
+generated: "2024-09-18T15:43:48.799984365Z"
