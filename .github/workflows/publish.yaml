@@ -29,7 +29,7 @@ env:
 
 jobs:
   publish-image:
-    if: github.repository_owner == 'decentralized-identity'
+    if: github.repository_owner == 'OpSecId'
     strategy:
       fail-fast: false
 
