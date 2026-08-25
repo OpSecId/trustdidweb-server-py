@@ -4,7 +4,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from app.routers.resources import _stored_resource_if_idempotent
+from app.plugins.attested_resources import stored_resource_if_idempotent
 
 from app import app
 from app.plugins.storage import StorageManager
@@ -39,11 +39,11 @@ def test_stored_resource_conflict_when_content_differs(monkeypatch):
         attested_resource = {"content": {"name": "original"}}
 
     monkeypatch.setattr(
-        "app.routers.resources.storage.get_resource",
+        "app.plugins.attested_resources.storage.get_resource",
         lambda resource_id: _Existing(),
     )
     with pytest.raises(HTTPException) as exc:
-        _stored_resource_if_idempotent("zQm123", {"content": {"name": "other"}})
+        stored_resource_if_idempotent("zQm123", {"content": {"name": "other"}})
     assert exc.value.status_code == 409
     assert "already exists" in exc.value.detail
 
