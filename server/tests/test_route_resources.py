@@ -1,7 +1,10 @@
 """Unit tests for the resources endpoints."""
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
+
+from app.routers.resources import _stored_resource_if_idempotent
 
 from app import app
 from app.plugins.storage import StorageManager
@@ -27,6 +30,22 @@ from did_webvh.core.state import DocumentState
 # Setup test agents
 witness = WitnessAgent()
 controller = ControllerAgent()
+
+
+def test_stored_resource_conflict_when_content_differs(monkeypatch):
+    """Same resource id with different content is a 409, not a silent overwrite."""
+
+    class _Existing:
+        attested_resource = {"content": {"name": "original"}}
+
+    monkeypatch.setattr(
+        "app.routers.resources.storage.get_resource",
+        lambda resource_id: _Existing(),
+    )
+    with pytest.raises(HTTPException) as exc:
+        _stored_resource_if_idempotent("zQm123", {"content": {"name": "other"}})
+    assert exc.value.status_code == 409
+    assert "already exists" in exc.value.detail
 
 
 @pytest.fixture(autouse=True)
@@ -108,6 +127,34 @@ class TestUploadResource:
             assert response.status_code == 200
             stored_resource = response.json()
             assert stored_resource["metadata"]["resourceId"] == actual_resource_id
+
+    @pytest.mark.asyncio
+    async def test_upload_resource_duplicate_same_content_is_idempotent(self):
+        """Retrying POST of the same resource returns 200 with the stored record."""
+        test_namespace, test_alias = create_test_namespace_and_alias("res-dup-same")
+
+        with TestClient(app) as test_client:
+            did_id, doc_state = create_unique_did(test_client, test_namespace, test_alias)
+            controller, verification_method_id = setup_controller_with_verification_method(
+                test_client, test_namespace, test_alias, doc_state
+            )
+            attested_resource, resource_id = create_test_resource(
+                controller, "testResource", witness=witness
+            )
+
+            first = test_client.post(
+                f"/{test_namespace}/{test_alias}/resources",
+                json={"attestedResource": attested_resource},
+            )
+            assert first.status_code == 201
+
+            retry = test_client.post(
+                f"/{test_namespace}/{test_alias}/resources",
+                json={"attestedResource": attested_resource},
+            )
+            assert retry.status_code == 200
+            assert retry.json()["metadata"]["resourceId"] == first.json()["metadata"]["resourceId"]
+            assert retry.json()["content"] == first.json()["content"]
 
     @pytest.mark.asyncio
     async def test_upload_resource_invalid_proof(self):
