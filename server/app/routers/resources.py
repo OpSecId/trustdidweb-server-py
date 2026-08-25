@@ -63,9 +63,7 @@ def _stored_resource_if_idempotent(resource_id: str, secured_resource: dict) -> 
     if not existing:
         return None
     stored = existing.attested_resource
-    if digest_multibase(stored.get("content")) == digest_multibase(
-        secured_resource.get("content")
-    ):
+    if digest_multibase(stored.get("content")) == digest_multibase(secured_resource.get("content")):
         logger.info("Resource %s already stored; returning existing record", resource_id)
         return stored
     raise HTTPException(
